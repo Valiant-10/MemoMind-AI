@@ -1,0 +1,28 @@
+# Virtual Environment
+.venv/
+venv/
+
+# Environment Variables
+.env
+
+# ChromaDB
+chroma_db/
+
+# PDFs
+pdf/
+
+# Chat History
+chats/
+memory.json
+chat_history.txt
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.idea/
+.vscode/
+
+# Logs
+*.log
