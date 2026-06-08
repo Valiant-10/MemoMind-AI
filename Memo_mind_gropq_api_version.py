@@ -75,6 +75,10 @@ CHAT_LOG = "chat_history.txt"
 #used for displaying the chat title names in chat history panel
 CURRENT_CHAT = None
 CHAT_TITLE = None
+SELECTED_CHAT_TITLE = None
+#adding Global mapping
+chat_buttons = {}
+selected_chat_button = None
 
 #creats a chat folder
 PROJECT_DIR = os.path.dirname(
@@ -305,6 +309,35 @@ clear_history_button = ctk.CTkButton(
 clear_history_button.pack(pady=5)
 
 
+#delete current chat function
+def delete_current_chat():
+    global CURRENT_CHAT
+    global CHAT_TITLE
+
+    if CURRENT_CHAT:
+
+        file_path = os.path.join(
+            CHATS_FOLDER,
+            CURRENT_CHAT
+        )
+
+        if os.path.exists(file_path):
+            os.remove(file_path)
+
+        CURRENT_CHAT = None
+        CHAT_TITLE = None
+
+        new_chat()
+        refresh_chat_history()
+
+        print("Chat deleted")
+#delete current chat button
+delete_chat_button =ctk.CTkButton(
+    sidebar_frame,
+    text = "Delete Current Chat",
+    command=delete_current_chat
+)
+delete_chat_button.pack(pady=5)
 #chat history heading
 chat_history_label = ctk.CTkLabel(
     sidebar_frame,
@@ -323,14 +356,17 @@ history_listbox = ctk.CTkTextbox(
 )
 
 # for scrolling chat history in side frame
-history_frame = ctk.CTkFrame(
-    sidebar_frame
+history_frame = ctk.CTkScrollableFrame(
+    sidebar_frame,
+    width=180,
+    height=250
 )
 
 history_frame.pack(
     padx=10,
     pady=(0,10),
-    fill="both"
+    fill="both",
+    expand=True
 )
 
 history_listbox = ctk.CTkTextbox(
@@ -359,62 +395,156 @@ history_listbox.configure(
     yscrollcommand=history_scrollbar.set
 )
 
+#single chat delete
+def delete_current_chat():
+    global CURRENT_CHAT
+    global CHAT_TITLE
+
+    if CURRENT_CHAT:
+        file_path = os.path.join(
+            CHATS_FOLDER,
+            CURRENT_CHAT
+        )
+        if os.path.exists(file_path):
+            os.remove(file_path)
+        CURRENT_CHAT = None
+        CHAT_TITLE = None
+
+        new_chat()
+        refresh_chat_history()
+
+        print("chat deleted")
+
 
 #refresh chat history function:
 def refresh_chat_history():
-    history_listbox.delete(
-        "1.0",
-         "end"
-    )
+
+    global chat_buttons
+
+    for widget in history_frame.winfo_children():
+        widget.destroy()
+
+    chat_buttons.clear()
 
     chat_files = sorted(
         os.listdir(CHATS_FOLDER),
         reverse=True
     )
-    for file in chat_files:
 
-        file_path = os.path.join(
-            CHATS_FOLDER,
-            file
-        )
+    for file in chat_files:
 
         try:
 
+            file_path = os.path.join(
+                CHATS_FOLDER,
+                file
+            )
+
             with open(
-                    file_path,
-                    "r",
-                    encoding="utf-8"
+                file_path,
+                "r",
+                encoding="utf-8"
             ) as f:
 
                 data = json.load(f)
 
-            if isinstance(data, dict):
-
-                title = data.get(
-                    "title",
-                    file.replace(".json", "")
-                )
-
-            else:
-
-                title = file.replace(
-                    ".json",
-                    ""
-                )
-
-            history_listbox.insert(
-                "end",
-                title + "\n"
+            title = data.get(
+                "title",
+                file.replace(".json", "")
             )
+
+            btn = ctk.CTkButton(
+                history_frame,
+                text=title,
+                anchor="w",
+                command=lambda f=file: load_chat(f)
+            )
+
+            btn.pack(
+                fill="x",
+                pady=2
+            )
+
+            chat_buttons[file] = btn
 
         except Exception as e:
 
             print(
-
                 "History Error:",
                 e
             )
+def load_chat(chat_file):
+    global messages
+    global CURRENT_CHAT
+    global CHAT_TITLE
+    try:
+        file_path = os.path.join(
+            CHATS_FOLDER,
+            chat_file
+        )
+        with open(
+            file_path,
+            "r",
+            encoding="utf-8"
+        )as f:
+            data = json.load(f)
 
+        CURRENT_CHAT = chat_file
+        CHAT_TITLE = data.get(
+        "title",
+            chat_file.replace(".json","")
+        )
+        global SELECTED_CHAT_TITLE
+        SELECTED_CHAT_TITLE = CHAT_TITLE
+
+        messages = data["messages"]
+        chat_box.delete("1.0","end")
+        for msg in messages:
+            if msg["role"] == "user":
+
+                chat_box.insert(
+                    "end",
+                    f"\nYou:\n{msg['content']}\n"
+
+                )
+            elif msg["role"]== "assistant":
+                chat_box.insert(
+                    "end",
+                    f"\nMemoMind AI:\n{msg['content']}\n"
+                )
+        chat_box.see("end")
+
+        refresh_chat_history()
+        print("CURRENT_CHAT=", CURRENT_CHAT)
+        highlight_selected_chat()
+    except Exception as e:
+        print("Load Chat Error: ", e)
+
+
+#highlight selected chat
+def highlight_selected_chat():
+    print("Selected:", CURRENT_CHAT)
+    print("Buttons:", chat_buttons.keys())
+
+    global selected_chat_button
+
+    for btn in chat_buttons.values():
+
+        btn.configure(
+            fg_color=("gray75", "gray25")
+        )
+
+    if CURRENT_CHAT in chat_buttons:
+        print("MATCH FOUND")
+
+        chat_buttons[CURRENT_CHAT].configure(
+            fg_color="#00AA55",
+            hover_color = "#00AA55"
+        )
+
+        selected_chat_button = chat_buttons[
+            CURRENT_CHAT
+        ]
 
 # upload pdf_button
 upload_button = ctk.CTkButton(
@@ -1372,6 +1502,8 @@ mic_button = ctk.CTkButton(
 )
 mic_button.pack(side="right", padx=(10, 5))
 refresh_chat_history()
+
+
 
 # ENTER KEY SUPPORT
 def enter_key(event):
