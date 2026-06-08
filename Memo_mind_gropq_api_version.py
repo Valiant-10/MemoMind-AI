@@ -1,5 +1,6 @@
 # from google import genai
 #from google.auth.environment_vars import PROJECT
+from numpy.random import choice
 from openai import OpenAI
 from dotenv import load_dotenv
 import customtkinter as ctk
@@ -16,15 +17,9 @@ from tkinter import filedialog
 import shutil
 import time
 from ddgs import DDGS
-# used colors
 
-# adding we search
+# GROQ CLIENT API
 
-# import ollama
-
-# ====================================================
-# google CLIENT
-# ==================================================== #
 load_dotenv()
 client = OpenAI(
     api_key=os.getenv("GROQ_API_KEY"),
@@ -61,6 +56,27 @@ print(sample)
 MODEL_NAME = "llama-3.3-70b-versatile"
 BACKUP_MODEL = "llama-3.1-8b-instant"
 MAX_TOKENS = 800
+
+#routing user input-> pdf_summary, pdf Q/A, web, memory, chat, text-summary
+MODEL_MODE= "Auto Router"
+ROUTER_MODELS = {
+    "PDF_SUMMARY": "llama-3.3-70b-versatile",
+    "PDF_QA": "llama-3.3-70b-versatile",
+    "WEB": "openai/gpt-oss-20b",
+    "MEMORY": "llama-3.1-8b-instant",
+    "CHAT": "llama-3.1-8b-instant",
+    "TEXT_SUMMARY": "llama-3.3-70b-versatile"
+}
+
+#create Manual Models
+MANUAL_MODELS = {
+    "GPT-OSS-20B": "openai/gpt-oss-20b",
+    "Llama 70B": "llama-3.3-70b-versatile",
+    "Llama 8B": "llama-3.1-8b-instant",
+    "GPT-OSS-120B": "openai/gpt-oss-120b"
+}
+
+
 
 CURRENT_PDF = None
 all_docs = collection.get()
@@ -346,6 +362,54 @@ title_label = ctk.CTkLabel(
 
 title_label.pack(pady=30)
 #===================================
+#add dropdown in sidebar for setting model
+model_mode_label =ctk.CTkLabel(
+    sidebar_frame,
+    text="MODEL MODE"
+)
+model_mode_label.pack(
+    pady=(10,5)
+)
+
+#change_model_mode function
+def change_model_mode(choice):
+    global MODEL_MODE
+    MODEL_MODE = choice
+    print(
+        "MODEL MODE =",
+        MODEL_MODE
+    )
+    print("MODEL_MODE =", MODEL_MODE)
+
+def get_model_for_route(route):
+
+    if MODEL_MODE != "Auto Router":
+        return MANUAL_MODELS[MODEL_MODE]
+
+    return ROUTER_MODELS.get(
+        route,
+        "llama-3.1-8b-instant"
+    )
+#model mode dropdown
+model_mode_dropdown = ctk.CTkOptionMenu(
+    sidebar_frame,
+    values=[
+        "Auto Router",
+        "GPT-OSS-20B",
+        "Llama 70B",
+        "Llama 8B",
+        "GPT-OSS-120B"
+    ],
+    command=change_model_mode
+)
+model_mode_dropdown.pack(
+    pady=(0, 10),
+    padx=20
+)
+
+model_mode_dropdown.set(
+    "Auto Router"
+)
 
 
 #add clear_chat_history function
@@ -436,9 +500,9 @@ chat_history_label.pack(
 history_listbox = ctk.CTkTextbox(
     sidebar_frame,
     fg_color=("#F5F5F5", "#1A1A1A"),
-    text_color=("black", "white"),
+    text_color=("black","white"),
     width=180,
-    height=250,
+    height=200,
     corner_radius=10
 )
 
@@ -814,6 +878,7 @@ clear_button = ctk.CTkButton(
     fg_color="#222222",
     hover_color="#333333",
     text_color=("white"),
+
     corner_radius=12,
     height=45,
     width=80,
@@ -1071,13 +1136,12 @@ def route_query(user_input):
         "do you remember",
         "my name",
         "Previous chat"
+        "hello"
     ]):
         return "MEMORY"
 
 
     return "CHAT"
-
-
 # ====================================================
 # SEND MESSAGE FUNCTION
 # ==================================================== #
@@ -1158,6 +1222,11 @@ def send_message():
         sources = []
         citations = []
         route = route_query(user_input)
+
+        #routing to models
+        selected_model = get_model_for_route(route)
+        print("ROUTE =", route)
+        print("MODEL =", selected_model)
 
         print("\nROUTE =", route)
         # ---------- PDF SUMMARY ----------
@@ -1417,7 +1486,7 @@ def send_message():
             # start streaming
             bot_reply = ""
             response = client.chat.completions.create(
-                model=MODEL_NAME,
+                model=selected_model,
                 messages=messages_payload,
                 temperature=0.3,
                 max_tokens=MAX_TOKENS,
@@ -1476,7 +1545,7 @@ def send_message():
         # to check which model responded
         chat_box.insert(
             "end",
-            f"\n\n🤖 Model Used: {MODEL_NAME}\n"
+            f"\n\n🤖 Model Used: {selected_model}\n"
         )
 
         chat_box.see("end")
