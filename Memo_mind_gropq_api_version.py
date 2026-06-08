@@ -16,7 +16,7 @@ from tkinter import filedialog
 import shutil
 import time
 from ddgs import DDGS
-
+# used colors
 
 # adding we search
 
@@ -71,6 +71,8 @@ if all_docs["metadatas"]:
 
 MEMORY_FILE = "memory.json"
 CHAT_LOG = "chat_history.txt"
+SETTINGS_FILE ="settings.json"
+
 
 #used for displaying the chat title names in chat history panel
 CURRENT_CHAT = None
@@ -133,10 +135,37 @@ else:
 # ====================================================
 # GUI SETTINGS
 # ==================================================== #
+CURRENT_THEME = "dark"
 
-ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("dark-blue")
+# GUI SETTINGS
 
+theme = "dark"
+
+if os.path.exists(SETTINGS_FILE):
+
+    try:
+
+        with open(
+            SETTINGS_FILE,
+            "r"
+        ) as f:
+
+            settings = json.load(f)
+
+        theme = settings.get(
+            "theme",
+            "dark"
+        )
+
+    except:
+
+        theme = "dark"
+
+ctk.set_appearance_mode(theme)
+
+ctk.set_default_color_theme(
+    "dark-blue"
+)
 # ====================================================
 # MAIN APP
 # ==================================================== #
@@ -147,7 +176,16 @@ app.title("MemoMind AI")
 
 app.geometry("1000x650")
 
+#create Toggle function
+def toggle_theme():
+    global CURRENT_THEME
 
+    if CURRENT_THEME =="dark":
+        ctk.set_appearance_mode("light")
+        CURRENT_THEME ="light"
+    else:
+        ctk.set_appearance_mode("dark")
+        CURRENT_THEME= "dark"
 # upload pdf function
 def upload_pdf():
     global CURRENT_PDF
@@ -224,8 +262,6 @@ def upload_pdf():
 
         chat_box.see("end")
 
-        update_doc_count()
-
     except Exception as e:
 
         chat_box.insert(
@@ -234,14 +270,6 @@ def upload_pdf():
         )
 
         chat_box.see("end")
-
-
-# update_doc_count function
-def update_doc_count():
-    doc_label.configure(
-        text=f"Documents Indexed:\n{collection.count()}"
-    )
-
 
 # ====================================================
 # SIDEBAR
@@ -254,25 +282,66 @@ sidebar_frame = ctk.CTkScrollableFrame(
 )
 
 sidebar_frame.pack(side="left", fill="y")
+#theme function
+def change_theme(choice):
 
-# doc_lable function
-doc_label = ctk.CTkLabel(
+    theme = choice.lower()
+
+    ctk.set_appearance_mode(
+        theme
+    )
+    user_entry.configure(
+        text_color=("black", "white")
+    )
+
+    with open(
+            SETTINGS_FILE,
+            "w"
+    ) as f:
+        json.dump(
+            {
+                "theme": theme
+            },
+            f,
+            indent=4
+        )
+
+
+#theme button
+theme_button = ctk.CTkButton(
     sidebar_frame,
-    text=f"Documents Indexed:\n{collection.count()}",
-    font=("Roboto UI", 12)
+    text="🌙 Dark / ☀️ Light",
+    command=toggle_theme,
+    corner_radius=12
 )
+theme_button.pack(
+    pady=10,
+    padx= 20
+)
+#theme dropdown
+#theme_menu = ctk.CTkOptionMenu(
+ #   sidebar_frame,
+  #  values=[
+   #     "Dark",
+    #    "Light",
+     #   "System"
+    #],
+    #command=change_theme
+#)
 
-doc_label.pack(
-    pady=10
-)
+#theme_menu.pack(
+ #   pady=10,
+  #  padx=20
+#)
 # ====================================================
 # TITLE
 # ==================================================== #
 
 title_label = ctk.CTkLabel(
     sidebar_frame,
-    text="MemoMind AI",
-    font=("Roboto UI", 22, "bold")
+    text="🧠 MemoMind",
+    font=("Segoe UI", 22, "bold")
+
 )
 
 title_label.pack(pady=30)
@@ -300,10 +369,17 @@ def clear_chat_history():
             )
         )
         refresh_chat_history()
+
 #add clear_chat_history button
 clear_history_button = ctk.CTkButton(
     sidebar_frame,
     text = "Clear chat history",
+    fg_color="#222222",
+    hover_color="#333333",
+    text_color="white",
+    corner_radius=12,
+    height=45,
+    width=80,
     command = clear_chat_history
 )
 clear_history_button.pack(pady=5)
@@ -331,18 +407,27 @@ def delete_current_chat():
         refresh_chat_history()
 
         print("Chat deleted")
+
 #delete current chat button
 delete_chat_button =ctk.CTkButton(
     sidebar_frame,
     text = "Delete Current Chat",
+    fg_color="#222222",
+    hover_color="#333333",
+    text_color="white",
+    corner_radius=12,
+    height=45,
+    width=80,
     command=delete_current_chat
 )
 delete_chat_button.pack(pady=5)
+
+
 #chat history heading
 chat_history_label = ctk.CTkLabel(
     sidebar_frame,
     text="Chat History",
-    font=("Roboto UI", 16, "bold")
+    font=("Segoe UI", 16, "bold")
 )
 chat_history_label.pack(
     pady=(15, 5)
@@ -350,6 +435,8 @@ chat_history_label.pack(
 #-----------------------
 history_listbox = ctk.CTkTextbox(
     sidebar_frame,
+    fg_color=("#F5F5F5", "#1A1A1A"),
+    text_color=("black", "white"),
     width=180,
     height=250,
     corner_radius=10
@@ -538,8 +625,8 @@ def highlight_selected_chat():
         print("MATCH FOUND")
 
         chat_buttons[CURRENT_CHAT].configure(
-            fg_color="#00AA55",
-            hover_color = "#00AA55"
+            fg_color="#3B82F6",
+            hover_color = "#0D8A6A"
         )
 
         selected_chat_button = chat_buttons[
@@ -550,8 +637,10 @@ def highlight_selected_chat():
 upload_button = ctk.CTkButton(
     sidebar_frame,
     text="Upload PDF",
-
-    corner_radius=20,
+    fg_color="#222222",
+    hover_color="#333333",
+    text_color=("white"),
+    corner_radius=12,
     height=45,
     width=80,
     command=upload_pdf
@@ -564,7 +653,7 @@ upload_button.pack(
 
 # ====================================================
 # NEW CHAT FUNCTION
-# ==================================================== #
+# ==================================================
 
 def new_chat():
     global messages
@@ -672,10 +761,13 @@ stop_button = ctk.CTkButton(
     height=45,
     width =80,
     command=stop_voice
+
 )
 stop_button.pack(
     pady=10,
     padx=20)
+stop_button.pack_forget()
+
 tts_engine = pyttsx3.init()
 tts_engine.setProperty("rate", 170)
 
@@ -705,7 +797,10 @@ threading.Thread(
 new_chat_button = ctk.CTkButton(
     sidebar_frame,
     text="New Chat",
-    corner_radius=20,
+    fg_color="#222222",
+    hover_color="#333333",
+    text_color=("white"),
+    corner_radius=12,
     height=45,
     width=80,
     command=new_chat
@@ -716,8 +811,12 @@ new_chat_button.pack(pady=(15,5), padx=20)
 clear_button = ctk.CTkButton(
     sidebar_frame,
     text="Clear Memory",
-    corner_radius=20,
-    height=45,width=80,
+    fg_color="#222222",
+    hover_color="#333333",
+    text_color=("white"),
+    corner_radius=12,
+    height=45,
+    width=80,
     command=clear_memory
 )
 clear_button.pack(pady=10, padx=20)
@@ -729,16 +828,20 @@ clear_button.pack(pady=10, padx=20)
 status_label = ctk.CTkLabel(
     sidebar_frame,
     text=f"Model:\n{MODEL_NAME}",
-    font=("Roboto ", 12),
+    font=("Segoe ", 12),
     justify="left"
 )
 status_label.pack(side="bottom", pady=20)
+status_label.pack_forget()
 
 # ====================================================
 # MAIN FRAME
 # ==================================================== #
 
 main_frame = ctk.CTkFrame(app)
+main_frame.configure(
+    fg_color = ("white", "#141414")
+)
 main_frame.pack(
     side="right",
     fill="both",
@@ -748,11 +851,12 @@ main_frame.pack(
 # ====================================================
 # HEADER
 # ==================================================== #
-
 header_label = ctk.CTkLabel(
     main_frame,
-    text="Welcome to MemoMind AI",
-    font=("Roboto", 26, "bold")
+    text="MemoMind",
+    font=("Segoe UI", 28, "bold"),
+    text_color=("black", "white"),
+
 )
 header_label.pack(pady=15)
 
@@ -763,10 +867,13 @@ header_label.pack(pady=15)
 chat_box = ctk.CTkTextbox(
     main_frame,
     wrap="word",
-    font=("Roboto", 14),
+    font=("Segoe", 14),
     corner_radius=20
 )
+chat_box.configure(
+text_color=("black", "white"),
 
+)
 chat_box.pack(
     padx=20,
     pady=10,
@@ -782,8 +889,8 @@ chat_box.insert(
 # TYPING LABEL
 typing_label = ctk.CTkLabel(
     main_frame,
-    text="",
-    font=("Roboto", 12)
+    text_color=("black", "white"),
+    font=("Segoe", 12)
 )
 
 typing_label.pack(pady=(0, 5))
@@ -812,7 +919,9 @@ user_entry = ctk.CTkEntry(
     placeholder_text="Type your message...",
     height=40,
     corner_radius=25,
-    font=("Roboto", 14)
+    font=("Segoe", 14),
+    text_color=("black","white"),
+    fg_color = ("white", "black")
 )
 
 
@@ -1456,10 +1565,10 @@ def send_message():
             f.write("-" * 50 + "\n")
 
         # to show memory
-        chat_box.insert(
-            "end",
-            f"\n🧠 Memory Entries: {memory_collection.count()}\n"
-        )
+        #chat_box.insert(
+         #   "end",
+          #  f"\n🧠 Memory Entries: {memory_collection.count()}\n"
+        #)
 
         chat_box.see("end")
         # to save chat memory
@@ -1481,8 +1590,10 @@ send_button = ctk.CTkButton(
     input_frame,
     text="Send",
     height=45,
+    fg_color="#6366F1",
+    hover_color="#4F46E5",
     corner_radius=25,
-    font=("Roboto UI", 14, "bold"),
+    font=("Segoe UI", 14, "bold"),
     command=send_message
 )
 
@@ -1497,8 +1608,13 @@ mic_button = ctk.CTkButton(
     text="🎤",
     width=55,
     height=45,
-    corner_radius=25,
-    command=listen_voice
+    corner_radius=12,
+fg_color="#222222",
+    hover_color="#333333",
+    text_color="white",
+    command=listen_voice,
+
+
 )
 mic_button.pack(side="right", padx=(10, 5))
 refresh_chat_history()
@@ -1509,10 +1625,28 @@ refresh_chat_history()
 def enter_key(event):
     stop_voice()
     send_message()
+app.configure(fg_color="#0F0F0F")
 
+main_frame.configure(
+    fg_color=("white", "#141414")
+)
+
+sidebar_frame.configure(
+fg_color=("#F5F5F5", "#111111")
+)
+
+chat_box.configure(
+fg_color=("white", "#1A1A1A"),
+text_color = ("black","white"),
+    border_width=0
+)
+
+user_entry.configure(
+fg_color=("#F5F5F5", "#1F1F1F"),
+    border_color="#2A2A2A",
+text_color=("black", "white")
+)
 
 app.bind("<Return>", enter_key)
 # RUN APP
 app.mainloop()
-
-"go through the code and let me know what are the errors currently working on citation, it was working only once when a project deployed "
